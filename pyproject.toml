@@ -12,6 +12,8 @@ dependencies = [
     "numpy",
     "soundfile",
     "pydub",
+    "fastapi",
+    "uvicorn",
 ]
 
 [project.scripts]
