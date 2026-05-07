@@ -6,7 +6,6 @@ from . import library
 from .audio import write_audio
 from .engines import get_engine
 from .pipeline import synthesize_article
-from .server import serve
 
 
 def cmd_add(args: argparse.Namespace) -> int:
@@ -41,6 +40,9 @@ def cmd_list(args: argparse.Namespace) -> int:
 
 
 def cmd_serve(args: argparse.Namespace) -> int:
+    # Imported here so non-serve commands skip ~200ms of fastapi/uvicorn loading.
+    from .server import serve
+
     print(f"vocast serving on http://{args.host}:{args.port}")
     print(f"podcast feed: http://{args.host}:{args.port}/feed.xml")
     serve(host=args.host, port=args.port)
