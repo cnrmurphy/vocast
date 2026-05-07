@@ -6,6 +6,7 @@ from datetime import datetime
 from email.utils import format_datetime
 from xml.sax.saxutils import escape
 
+import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.responses import FileResponse, PlainTextResponse, Response
 
@@ -74,6 +75,4 @@ def _build_rss(entries: list[LibraryEntry], base_url: str) -> str:
 
 
 def serve(host: str = "127.0.0.1", port: int = 8080) -> None:
-    import uvicorn
-
     uvicorn.run(create_app(), host=host, port=port, log_level="info")
