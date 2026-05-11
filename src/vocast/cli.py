@@ -121,7 +121,7 @@ def cmd_init(args: argparse.Namespace) -> int:
         print(f"[ ] HTTPS proxy not configured for port {args.port}.")
         print()
         print("Configure it (one-time, may prompt for sudo), then re-run 'vocast init':")
-        print(f"  sudo tailscale serve --bg --https=443 / http://127.0.0.1:{args.port}")
+        print(f"  sudo tailscale serve --bg {args.port}")
         return 1
     print(f"[x] HTTPS proxy: https://{dns_name}/  ->  {expected_proxy}")
 
