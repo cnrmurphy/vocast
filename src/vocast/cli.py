@@ -135,9 +135,10 @@ def cmd_init(args: argparse.Namespace) -> int:
     print(f"  1. Start the server:        vocast serve --port {args.port}")
     print("  2. Install Tailscale on iPhone, sign in to the same tailnet.")
     print(f"  3. Open Safari, visit:      {feed_url}")
-    print(f"  4. Install Castro (App Store), 'Add Podcast by URL', paste:  {feed_url}")
-    print("     (Avoid Overcast/Pocket Casts — they fetch feeds server-side,")
-    print("      which can't reach your tailnet.)")
+    print(f"  4. Install a direct-download podcast app and add:  {feed_url}")
+    print("     Confirmed working: Downcast ($2.99). Any app that fetches feeds")
+    print("     directly on-device will work; AVOID Overcast and Pocket Casts —")
+    print("     they fetch feeds via their own servers, which can't reach your tailnet.")
     return 0
 
 
