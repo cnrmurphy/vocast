@@ -22,6 +22,7 @@ def fetch_article(url: str) -> tuple[str | None, str]:
         with_metadata=True,
         include_comments=False,
         include_tables=False,
+        prune_xpath=["//pre"],
     )
     if result is None:
         raise ValueError(f"could not extract content from {url}")
