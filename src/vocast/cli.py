@@ -1,4 +1,7 @@
 import argparse
+import json
+import shutil
+import subprocess
 import sys
 from pathlib import Path
 
@@ -49,6 +52,93 @@ def cmd_serve(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_init(args: argparse.Namespace) -> int:
+    print("Checking setup for serving vocast over Tailscale...")
+    print()
+
+    if not shutil.which("tailscale"):
+        print("[ ] Tailscale not installed.")
+        print()
+        print("Install Tailscale, then re-run 'vocast init':")
+        if sys.platform == "darwin":
+            print("  brew install tailscale  (or https://tailscale.com/download)")
+        else:
+            print("  curl -fsSL https://tailscale.com/install.sh | sh")
+        return 1
+    print("[x] Tailscale installed.")
+
+    status_proc = subprocess.run(
+        ["tailscale", "status", "--json"],
+        capture_output=True,
+        text=True,
+    )
+    if status_proc.returncode != 0:
+        print("[ ] Tailscale daemon not reachable.")
+        print()
+        print("Start the daemon and sign in, then re-run 'vocast init':")
+        print("  sudo systemctl enable --now tailscaled")
+        print("  sudo tailscale up")
+        return 1
+
+    status = json.loads(status_proc.stdout)
+    if status.get("BackendState") != "Running":
+        print("[ ] Not signed in to a tailnet.")
+        print()
+        print("Sign in (opens a browser), then re-run 'vocast init':")
+        print("  sudo tailscale up")
+        return 1
+    print("[x] Signed in to tailnet.")
+
+    dns_name = (status.get("Self") or {}).get("DNSName", "").rstrip(".")
+    if not dns_name or "." not in dns_name:
+        print("[ ] No tailnet DNS hostname available.")
+        print()
+        print("Enable MagicDNS, then re-run 'vocast init':")
+        print("  https://login.tailscale.com/admin/dns")
+        return 1
+    print(f"[x] Tailnet hostname: {dns_name}")
+
+    expected_proxy = f"http://127.0.0.1:{args.port}"
+    is_configured = False
+    serve_proc = subprocess.run(
+        ["tailscale", "serve", "status", "--json"],
+        capture_output=True,
+        text=True,
+    )
+    if serve_proc.returncode == 0 and serve_proc.stdout.strip():
+        try:
+            serve_cfg = json.loads(serve_proc.stdout)
+            web = serve_cfg.get("Web") or {}
+            entry = web.get(f"{dns_name}:443") or {}
+            handlers = entry.get("Handlers") or {}
+            root = handlers.get("/") or {}
+            if root.get("Proxy") == expected_proxy:
+                is_configured = True
+        except json.JSONDecodeError:
+            pass
+
+    if not is_configured:
+        print(f"[ ] HTTPS proxy not configured for port {args.port}.")
+        print()
+        print("Configure it (one-time, may prompt for sudo), then re-run 'vocast init':")
+        print(f"  sudo tailscale serve --bg --https=443 / http://127.0.0.1:{args.port}")
+        return 1
+    print(f"[x] HTTPS proxy: https://{dns_name}/  ->  {expected_proxy}")
+
+    feed_url = f"https://{dns_name}/feed.xml"
+    print()
+    print("All set.")
+    print()
+    print(f"  Feed URL: {feed_url}")
+    print()
+    print("To use it:")
+    print(f"  1. Start the server:        vocast serve --port {args.port}")
+    print("  2. Install Tailscale on iPhone, sign in to the same tailnet.")
+    print(f"  3. Open Safari, visit:      {feed_url}")
+    print(f"  4. Install Overcast (App Store), 'Add URL', paste:  {feed_url}")
+    return 0
+
+
 def cmd_synth(args: argparse.Namespace) -> int:
     if not args.input.exists():
         print(f"error: {args.input} not found", file=sys.stderr)
@@ -86,6 +176,18 @@ def main(argv: list[str] | None = None) -> int:
     p_serve.add_argument("--host", default="127.0.0.1", help="bind host (default: 127.0.0.1)")
     p_serve.add_argument("--port", type=int, default=8080, help="bind port (default: 8080)")
     p_serve.set_defaults(func=cmd_serve)
+
+    p_init = sub.add_parser(
+        "init",
+        help="guided setup for serving the feed externally via Tailscale HTTPS",
+    )
+    p_init.add_argument(
+        "--port",
+        type=int,
+        default=8080,
+        help="local port that vocast serve uses (default: 8080)",
+    )
+    p_init.set_defaults(func=cmd_init)
 
     p_synth = sub.add_parser("synth", help="synthesize directly to a file (no library)")
     p_synth.add_argument("input", type=Path, help="path to a UTF-8 text file")
