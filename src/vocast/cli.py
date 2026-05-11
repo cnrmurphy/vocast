@@ -12,11 +12,27 @@ from .pipeline import synthesize_article
 
 
 def cmd_add(args: argparse.Namespace) -> int:
-    if not args.input.exists():
-        print(f"error: {args.input} not found", file=sys.stderr)
-        return 1
-    text = args.input.read_text(encoding="utf-8")
-    title = args.title or args.input.stem
+    if _is_url(args.input):
+        from .fetch import fetch_article
+
+        if not args.quiet:
+            print(f"fetching {args.input}...")
+        try:
+            fetched_title, text = fetch_article(args.input)
+        except ValueError as e:
+            print(f"error: {e}", file=sys.stderr)
+            return 1
+        title = args.title or fetched_title or "untitled"
+        source = args.source or args.input
+    else:
+        path = Path(args.input)
+        if not path.exists():
+            print(f"error: {path} not found", file=sys.stderr)
+            return 1
+        text = path.read_text(encoding="utf-8")
+        title = args.title or path.stem
+        source = args.source
+
     engine = get_engine(args.engine)
     voice = args.voice or engine.default_voice
     chunk = synthesize_article(text, engine, voice=voice, progress=not args.quiet)
@@ -25,11 +41,15 @@ def cmd_add(args: argparse.Namespace) -> int:
         chunk=chunk,
         voice=voice,
         engine=args.engine,
-        source=args.source,
+        source=source,
     )
     if not args.quiet:
         print(f"added {entry.id} ({entry.duration_seconds:.1f}s)")
     return 0
+
+
+def _is_url(s: str) -> bool:
+    return s.startswith(("http://", "https://"))
 
 
 def cmd_list(args: argparse.Namespace) -> int:
@@ -164,9 +184,9 @@ def main(argv: list[str] | None = None) -> int:
     sub = parser.add_subparsers(dest="cmd", required=True)
 
     p_add = sub.add_parser("add", help="synthesize an article and add it to the library")
-    p_add.add_argument("input", type=Path, help="path to a UTF-8 text file")
-    p_add.add_argument("--title", default=None, help="article title (default: filename)")
-    p_add.add_argument("--source", default=None, help="source URL or attribution")
+    p_add.add_argument("input", type=str, help="path to a UTF-8 text file or a URL to fetch")
+    p_add.add_argument("--title", default=None, help="article title (default: extracted/filename)")
+    p_add.add_argument("--source", default=None, help="source URL or attribution (default: the URL if input is one)")
     p_add.add_argument("-e", "--engine", default="kokoro", help="TTS engine (default: kokoro)")
     p_add.add_argument("--voice", default=None, help="voice id (engine-specific)")
     p_add.add_argument("--quiet", action="store_true", help="suppress progress output")
