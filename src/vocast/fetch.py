@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import trafilatura
 
 
@@ -14,13 +16,19 @@ def fetch_article(url: str) -> tuple[str | None, str]:
     if html is None:
         raise ValueError(f"could not fetch {url}")
 
-    result = trafilatura.bare_extraction(html, include_comments=False)
-    if not result:
+    result = trafilatura.extract(
+        html,
+        output_format="json",
+        with_metadata=True,
+        include_comments=False,
+        include_tables=False,
+    )
+    if result is None:
         raise ValueError(f"could not extract content from {url}")
 
-    title = result.get("title") if isinstance(result, dict) else getattr(result, "title", None)
-    text = result.get("text") if isinstance(result, dict) else getattr(result, "text", None)
-    text = (text or "").strip()
+    data = json.loads(result)
+    title = data.get("title")
+    text = (data.get("text") or "").strip()
 
     if not text:
         raise ValueError(f"extracted empty content from {url}")
