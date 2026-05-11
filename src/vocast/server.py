@@ -21,13 +21,13 @@ def create_app() -> FastAPI:
         suffix = "s" if n != 1 else ""
         return PlainTextResponse(f"vocast — {n} article{suffix}\nfeed: /feed.xml\n")
 
-    @app.get("/feed.xml")
+    @app.api_route("/feed.xml", methods=["GET", "HEAD"])
     def feed(request: Request) -> Response:
         base = str(request.base_url).rstrip("/")
         xml = _build_rss(list_entries(), base)
         return Response(content=xml, media_type="application/rss+xml; charset=utf-8")
 
-    @app.get("/audio/{entry_id}.mp3")
+    @app.api_route("/audio/{entry_id}.mp3", methods=["GET", "HEAD"])
     def audio(entry_id: str) -> Response:
         entry = get_entry(entry_id)
         if entry is None:
