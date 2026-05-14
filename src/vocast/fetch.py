@@ -2,9 +2,39 @@
 
 from __future__ import annotations
 
+import gzip
 import json
+import urllib.error
+import urllib.request
+import zlib
 
 import trafilatura
+
+USER_AGENT = (
+    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+    "(KHTML, like Gecko) Chrome/120.0 Safari/537.36"
+)
+
+
+def _fetch_html(url: str, timeout: float = 30.0) -> str:
+    req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            raw = resp.read()
+            encoding = resp.headers.get("Content-Encoding", "").lower()
+            if encoding == "gzip":
+                raw = gzip.decompress(raw)
+            elif encoding == "deflate":
+                raw = zlib.decompress(raw)
+            charset = resp.headers.get_content_charset() or "utf-8"
+            return raw.decode(charset, errors="replace")
+    except urllib.error.HTTPError as e:
+        raise ValueError(f"HTTP {e.code} {e.reason} from {url}") from e
+    except urllib.error.URLError as e:
+        reason = getattr(e, "reason", str(e))
+        raise ValueError(f"network error fetching {url}: {reason}") from e
+    except TimeoutError:
+        raise ValueError(f"timed out fetching {url}") from None
 
 
 def fetch_article(url: str) -> tuple[str | None, str]:
@@ -12,9 +42,7 @@ def fetch_article(url: str) -> tuple[str | None, str]:
 
     Raises ValueError if the URL can't be fetched or has no extractable content.
     """
-    html = trafilatura.fetch_url(url)
-    if html is None:
-        raise ValueError(f"could not fetch {url}")
+    html = _fetch_html(url)
 
     result = trafilatura.extract(
         html,
@@ -22,6 +50,7 @@ def fetch_article(url: str) -> tuple[str | None, str]:
         with_metadata=True,
         include_comments=False,
         include_tables=False,
+        prune_xpath=["//pre"],
     )
     if result is None:
         raise ValueError(f"could not extract content from {url}")
