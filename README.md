@@ -2,9 +2,16 @@
 
 Convert articles to audio using local TTS models.
 
-## Status
+## Why
 
-Early. The CLI works end-to-end. No server, URL fetching, streaming, or UI yet — plain text in, audio file out.
+I wanted a way to convert articles into audio that I could stream to my mobile device while on the go. This seemed straightforward enough to build myself
+and I didn't want to pay for an app. 
+
+## How
+
+Vocast uses Kokoro for TTS. It can fetch articles from a given URL or local text file. Audio files are saved to `~/.vocast/library`. It provides an HTTP server
+that exposes an RSS feed allowing for podcast apps to discover the converted audio files. You can use Tailscale to allow connections between the server and client devices
+like your mobile phone. You will need to use a podcast app that does not proxy requests through their own servers as that will prevent the app from connecting to your Vocast server.
 
 ## Requirements
 
@@ -30,42 +37,47 @@ The first run downloads the Kokoro weights (~300 MB) and a small spaCy model int
 
 ## Usage
 
-```
-vocast article.txt                   # writes article.mp3
-vocast article.txt -o out.wav        # WAV output
-vocast article.txt --voice af_bella  # different Kokoro voice
-vocast article.txt --quiet           # suppress per-chunk progress
-```
+Vocast has subcommands; run `vocast --help` to see them all.
 
-Long articles are split on sentence boundaries (Kokoro has a per-call token limit), each piece is synthesized separately, and the results are concatenated with a short silence between chunks.
-
-## Project layout
+### Add an article to the library
 
 ```
-src/vocast/
-  cli.py             CLI entry point
-  pipeline.py        text -> chunks -> audio -> file
-  chunking.py        sentence-aware splitting
-  audio.py           concat + WAV/MP3 encoding
-  engines/
-    engine.py        TTSEngine ABC + AudioChunk
-    kokoro_engine.py
-    __init__.py      get_engine(name) factory
+vocast add https://example.com/article    # fetch and synthesize a URL
+vocast add notes.txt                      # synthesize a local text file
+vocast add ... --title "Custom title"     # override the title
+vocast add ... --voice af_bella           # use a different Kokoro voice
+vocast add ... --quiet                    # suppress per-chunk progress
 ```
 
-## Adding a TTS engine
+URLs are fetched and cleaned with `trafilatura`. Code blocks (`<pre>` elements) are stripped before synthesis since they don't translate well to audio. Each entry is stored under `~/.vocast/library/<id>/` as `audio.mp3` plus `meta.json` with title, source URL, duration, and voice.
 
-Implement `TTSEngine` in `src/vocast/engines/` and add a branch to `get_engine` in `engines/__init__.py`. The pipeline only sees the abstract interface, so no other code changes.
+### List the library
 
-```python
-from .engine import AudioChunk, TTSEngine
-
-class MyEngine(TTSEngine):
-    @property
-    def sample_rate(self) -> int: ...
-    @property
-    def max_chars(self) -> int: ...
-    @property
-    def default_voice(self) -> str: ...
-    def synthesize(self, text: str, voice: str | None = None) -> AudioChunk: ...
 ```
+vocast list
+```
+
+### Serve the library as a podcast feed
+
+```
+vocast serve                                # 127.0.0.1:8080 by default
+vocast serve --host 0.0.0.0 --port 8000     # custom host/port
+```
+
+Exposes `GET /feed.xml` (podcast RSS) and `GET /audio/<id>.mp3` (audio enclosures). Long articles are split on sentence boundaries during synthesis and concatenated with short silence between chunks.
+
+### Expose the feed to your phone over Tailscale
+
+```
+vocast init
+```
+
+A guided checklist that walks you through installing Tailscale, signing into your tailnet, and proxying `vocast serve` over HTTPS via `tailscale serve`. Re-run after each step until it prints your feed URL, then add that URL to a direct-download podcast app (Downcast is confirmed working).
+
+### Synthesize directly to a file (skip the library)
+
+```
+vocast synth article.txt              # writes article.mp3
+vocast synth article.txt -o out.wav   # WAV output
+```
+
