@@ -6,8 +6,8 @@ from .engine import AudioChunk, TTSEngine
 class KokoroEngine(TTSEngine):
     SAMPLE_RATE = 24000
     DEFAULT_VOICE = "af_heart"
-    # Kokoro caps at ~510 phoneme tokens per inference. ~4 chars/token -> ~2000;
-    # stay conservative to leave room for phonemizer expansion.
+    # Target size for grouping sentences into chunks. Each chunk is synthesized
+    # separately, and the silence gap is inserted between chunks.
     MAX_CHARS = 1800
 
     def __init__(self, lang_code: str = "a"):
@@ -30,9 +30,11 @@ class KokoroEngine(TTSEngine):
     def synthesize(self, text: str, voice: str | None = None) -> AudioChunk:
         voice = voice or self.DEFAULT_VOICE
         parts: list[np.ndarray] = []
-        for _gs, _ps, audio in self._pipeline(text, voice=voice):
-            arr = audio.cpu().numpy() if hasattr(audio, "cpu") else np.asarray(audio)
-            parts.append(arr.astype(np.float32))
+        for result in self._pipeline(text, voice=voice):
+            audio = result.audio
+            if audio is None:
+                continue
+            parts.append(audio.cpu().numpy().astype(np.float32))
         if not parts:
             return AudioChunk(np.zeros(0, dtype=np.float32), self.SAMPLE_RATE)
         return AudioChunk(np.concatenate(parts), self.SAMPLE_RATE)
