@@ -19,10 +19,12 @@ like your mobile phone. You will need to use a podcast app that does not proxy r
 - `ffmpeg` on PATH (used for MP3 encoding)
 - `espeak-ng` on PATH (used by Kokoro as a fallback phonemizer)
 
-On Fedora:
+Install them with your system package manager:
 
 ```
-sudo dnf install ffmpeg espeak-ng
+sudo dnf install ffmpeg espeak-ng     # Fedora
+sudo apt install ffmpeg espeak-ng     # Debian/Ubuntu
+brew install ffmpeg espeak-ng         # macOS
 ```
 
 ## Install

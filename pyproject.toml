@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 name = "vocast"
 version = "0.1.0"
 description = "Convert articles to audio you can stream, using local TTS models"
-requires-python = ">=3.10"
+requires-python = ">=3.10,<3.13"
 dependencies = [
     "kokoro>=0.9.4",
     "numpy",
