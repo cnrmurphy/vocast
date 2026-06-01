@@ -1,10 +1,15 @@
 from pathlib import Path
 
+import imageio_ffmpeg
 import numpy as np
 import soundfile as sf
 from pydub import AudioSegment
 
 from .engines import AudioChunk
+
+# Use the ffmpeg binary bundled with imageio-ffmpeg so users don't need a
+# system ffmpeg install. pydub shells out to this for MP3 encoding.
+AudioSegment.converter = imageio_ffmpeg.get_ffmpeg_exe()
 
 
 def concat_with_silence(chunks: list[AudioChunk], gap_ms: int = 120) -> AudioChunk:
