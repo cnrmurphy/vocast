@@ -15,27 +15,37 @@ like your mobile phone. You will need to use a podcast app that does not proxy r
 
 ## Requirements
 
-- Python 3.10–3.12 (Kokoro does not yet support 3.13)
-- `ffmpeg` on PATH (used for MP3 encoding)
+- Python 3.10–3.12 (Kokoro does not yet support 3.13). Installing with `uv` provisions a compatible Python for you.
 - `espeak-ng` on PATH (used by Kokoro as a fallback phonemizer)
 
-Install them with your system package manager:
+ffmpeg is bundled (via `imageio-ffmpeg`), so the only system dependency is `espeak-ng`:
 
 ```
-sudo dnf install ffmpeg espeak-ng     # Fedora
-sudo apt install ffmpeg espeak-ng     # Debian/Ubuntu
-brew install ffmpeg espeak-ng         # macOS
+sudo dnf install espeak-ng     # Fedora
+sudo apt install espeak-ng     # Debian/Ubuntu
+brew install espeak-ng         # macOS
 ```
 
 ## Install
 
+The recommended way is an isolated tool install, which also provisions a compatible Python for you and puts a `vocast` command on your PATH:
+
 ```
-python3.12 -m venv .venv
-source .venv/bin/activate
-pip install -e .
+uv tool install git+https://github.com/cnrmurphy/vocast
+# or, with pipx:
+pipx install git+https://github.com/cnrmurphy/vocast
 ```
 
+(Once published to PyPI this becomes simply `uv tool install vocast`.)
+
 The first run downloads the Kokoro weights (~300 MB) and a small spaCy model into the cache. Subsequent runs are immediate.
+
+### From source (development)
+
+```
+uv venv && source .venv/bin/activate
+uv pip install -e .
+```
 
 ## Usage
 
