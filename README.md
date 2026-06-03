@@ -31,12 +31,10 @@ brew install espeak-ng         # macOS
 The recommended way is an isolated tool install, which also provisions a compatible Python for you and puts a `vocast` command on your PATH:
 
 ```
-uv tool install git+https://github.com/cnrmurphy/vocast
+uv tool install vocast
 # or, with pipx:
-pipx install git+https://github.com/cnrmurphy/vocast
+pipx install vocast
 ```
-
-(Once published to PyPI this becomes simply `uv tool install vocast`.)
 
 The first run downloads the Kokoro weights (~300 MB) and a small spaCy model into the cache. Subsequent runs are immediate.
 
