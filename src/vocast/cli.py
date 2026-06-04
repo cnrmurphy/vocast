@@ -3,6 +3,7 @@ import json
 import shutil
 import subprocess
 import sys
+from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
 from . import library
@@ -176,10 +177,22 @@ def cmd_synth(args: argparse.Namespace) -> int:
     return 0
 
 
+def _vocast_version() -> str:
+    try:
+        return version("vocast")
+    except PackageNotFoundError:
+        return "unknown"
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(
         prog="vocast",
         description="Convert text articles to audio you can stream.",
+    )
+    parser.add_argument(
+        "--version",
+        action="version",
+        version=f"%(prog)s {_vocast_version()}",
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
