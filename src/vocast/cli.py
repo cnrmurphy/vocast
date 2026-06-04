@@ -3,6 +3,7 @@ import json
 import shutil
 import subprocess
 import sys
+from datetime import datetime
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 
@@ -53,13 +54,49 @@ def _is_url(s: str) -> bool:
     return s.startswith(("http://", "https://"))
 
 
+LIST_TITLE_WIDTH = 60
+
+
+def _format_duration(seconds: float) -> str:
+    total = int(round(seconds))
+    hours, rem = divmod(total, 3600)
+    minutes, secs = divmod(rem, 60)
+    if hours:
+        return f"{hours}:{minutes:02d}:{secs:02d}"
+    return f"{minutes}:{secs:02d}"
+
+
+def _format_date(iso: str) -> str:
+    try:
+        return datetime.fromisoformat(iso).astimezone().strftime("%Y-%m-%d")
+    except ValueError:
+        return iso
+
+
+def _truncate(text: str, width: int) -> str:
+    return text if len(text) <= width else text[: width - 1] + "…"
+
+
 def cmd_list(args: argparse.Namespace) -> int:
     entries = library.list_entries()
     if not entries:
         print("(no articles)")
         return 0
-    for e in entries:
-        print(f"{e.id}  {e.duration_seconds:>6.1f}s  {e.title}")
+    rows = [
+        (
+            _truncate(e.title, LIST_TITLE_WIDTH),
+            _format_duration(e.duration_seconds),
+            e.voice,
+            _format_date(e.synthesized_at),
+        )
+        for e in entries
+    ]
+    title_w = max(len("TITLE"), *(len(r[0]) for r in rows))
+    dur_w = max(len("DURATION"), *(len(r[1]) for r in rows))
+    voice_w = max(len("VOICE"), *(len(r[2]) for r in rows))
+    print(f"{'TITLE':<{title_w}}  {'DURATION':>{dur_w}}  {'VOICE':<{voice_w}}  ADDED")
+    for title, dur, voice, added in rows:
+        print(f"{title:<{title_w}}  {dur:>{dur_w}}  {voice:<{voice_w}}  {added}")
     return 0
 
 
@@ -141,7 +178,9 @@ def cmd_init(args: argparse.Namespace) -> int:
     if not is_configured:
         print(f"[ ] HTTPS proxy not configured for port {args.port}.")
         print()
-        print("Configure it (one-time, may prompt for sudo), then re-run 'vocast init':")
+        print(
+            "Configure it (one-time, may prompt for sudo), then re-run 'vocast init':"
+        )
         print(f"  sudo tailscale serve --bg {args.port}")
         return 1
     print(f"[x] HTTPS proxy: https://{dns_name}/  ->  {expected_proxy}")
@@ -159,7 +198,9 @@ def cmd_init(args: argparse.Namespace) -> int:
     print(f"  4. Install a direct-download podcast app and add:  {feed_url}")
     print("     Confirmed working: Downcast ($2.99). Any app that fetches feeds")
     print("     directly on-device will work; AVOID Overcast and Pocket Casts —")
-    print("     they fetch feeds via their own servers, which can't reach your tailnet.")
+    print(
+        "     they fetch feeds via their own servers, which can't reach your tailnet."
+    )
     return 0
 
 
@@ -196,11 +237,23 @@ def main(argv: list[str] | None = None) -> int:
     )
     sub = parser.add_subparsers(dest="cmd", required=True)
 
-    p_add = sub.add_parser("add", help="synthesize an article and add it to the library")
-    p_add.add_argument("input", type=str, help="path to a UTF-8 text file or a URL to fetch")
-    p_add.add_argument("--title", default=None, help="article title (default: extracted/filename)")
-    p_add.add_argument("--source", default=None, help="source URL or attribution (default: the URL if input is one)")
-    p_add.add_argument("-e", "--engine", default="kokoro", help="TTS engine (default: kokoro)")
+    p_add = sub.add_parser(
+        "add", help="synthesize an article and add it to the library"
+    )
+    p_add.add_argument(
+        "input", type=str, help="path to a UTF-8 text file or a URL to fetch"
+    )
+    p_add.add_argument(
+        "--title", default=None, help="article title (default: extracted/filename)"
+    )
+    p_add.add_argument(
+        "--source",
+        default=None,
+        help="source URL or attribution (default: the URL if input is one)",
+    )
+    p_add.add_argument(
+        "-e", "--engine", default="kokoro", help="TTS engine (default: kokoro)"
+    )
     p_add.add_argument("--voice", default=None, help="voice id (engine-specific)")
     p_add.add_argument("--quiet", action="store_true", help="suppress progress output")
     p_add.set_defaults(func=cmd_add)
@@ -209,8 +262,12 @@ def main(argv: list[str] | None = None) -> int:
     p_list.set_defaults(func=cmd_list)
 
     p_serve = sub.add_parser("serve", help="run the HTTP server (RSS feed + audio)")
-    p_serve.add_argument("--host", default="127.0.0.1", help="bind host (default: 127.0.0.1)")
-    p_serve.add_argument("--port", type=int, default=8080, help="bind port (default: 8080)")
+    p_serve.add_argument(
+        "--host", default="127.0.0.1", help="bind host (default: 127.0.0.1)"
+    )
+    p_serve.add_argument(
+        "--port", type=int, default=8080, help="bind port (default: 8080)"
+    )
     p_serve.set_defaults(func=cmd_serve)
 
     p_init = sub.add_parser(
@@ -234,9 +291,13 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help="output audio file (default: <input>.mp3). Format: .mp3 or .wav.",
     )
-    p_synth.add_argument("-e", "--engine", default="kokoro", help="TTS engine (default: kokoro)")
+    p_synth.add_argument(
+        "-e", "--engine", default="kokoro", help="TTS engine (default: kokoro)"
+    )
     p_synth.add_argument("--voice", default=None, help="voice id (engine-specific)")
-    p_synth.add_argument("--quiet", action="store_true", help="suppress progress output")
+    p_synth.add_argument(
+        "--quiet", action="store_true", help="suppress progress output"
+    )
     p_synth.set_defaults(func=cmd_synth)
 
     args = parser.parse_args(argv)
