@@ -6,6 +6,7 @@ from .engine import AudioChunk, TTSEngine
 class KokoroEngine(TTSEngine):
     SAMPLE_RATE = 24000
     DEFAULT_VOICE = "af_heart"
+    REPO_ID = "hexgrad/Kokoro-82M"
     # Target size for grouping sentences into chunks. Each chunk is synthesized
     # separately, and the silence gap is inserted between chunks.
     MAX_CHARS = 1800
@@ -13,7 +14,7 @@ class KokoroEngine(TTSEngine):
     def __init__(self, lang_code: str = "a"):
         from kokoro import KPipeline
 
-        self._pipeline = KPipeline(lang_code=lang_code)
+        self._pipeline = KPipeline(lang_code=lang_code, repo_id=self.REPO_ID)
 
     @property
     def sample_rate(self) -> int:
