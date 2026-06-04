@@ -1,11 +1,21 @@
+import warnings
 from pathlib import Path
 
 import imageio_ffmpeg
 import numpy as np
 import soundfile as sf
-from pydub import AudioSegment
 
 from .engines import AudioChunk
+
+# pydub probes PATH for ffmpeg/avconv when it is imported and warns if neither is
+# found. We supply ffmpeg via imageio-ffmpeg (set as the converter below), so on
+# machines without a system ffmpeg (e.g. Windows) that probe is a false alarm —
+# silence just that one warning during the import.
+with warnings.catch_warnings():
+    warnings.filterwarnings(
+        "ignore", message="Couldn't find ffmpeg or avconv", category=RuntimeWarning
+    )
+    from pydub import AudioSegment  # noqa: E402
 
 # Use the ffmpeg binary bundled with imageio-ffmpeg so users don't need a
 # system ffmpeg install. pydub shells out to this for MP3 encoding.
