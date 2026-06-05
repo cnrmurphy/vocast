@@ -3,7 +3,7 @@
 from vocast.library import LibraryEntry, match_entries
 
 
-def _entry(entry_id: str, title: str) -> LibraryEntry:
+def _make_library_entry(entry_id: str, title: str) -> LibraryEntry:
     return LibraryEntry(
         id=entry_id,
         title=title,
@@ -16,9 +16,11 @@ def _entry(entry_id: str, title: str) -> LibraryEntry:
 
 
 ENTRIES = [
-    _entry("20260604T120000Z_the_bitter_lesson_a8f31c", "The Bitter Lesson"),
-    _entry("20260605T120000Z_why_rss_b91d22", "Why RSS Still Matters"),
-    _entry(
+    _make_library_entry(
+        "20260604T120000Z_the_bitter_lesson_a8f31c", "The Bitter Lesson"
+    ),
+    _make_library_entry("20260605T120000Z_why_rss_b91d22", "Why RSS Still Matters"),
+    _make_library_entry(
         "20260606T120000Z_bitter_lessons_ai_f812aa", "Bitter Lessons from AI History"
     ),
 ]
