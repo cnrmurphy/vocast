@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import re
 import secrets
+import shutil
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -33,6 +34,11 @@ class LibraryEntry:
 
     def meta_path(self) -> Path:
         return self.dir() / "meta.json"
+
+    @property
+    def short_id(self) -> str:
+        """Trailing hex token of the id — a stable, human-friendly handle."""
+        return self.id.rsplit("_", 1)[-1]
 
 
 def _make_id(title: str) -> str:
@@ -88,3 +94,26 @@ def get_entry(entry_id: str) -> LibraryEntry | None:
     if not meta.exists():
         return None
     return LibraryEntry(**json.loads(meta.read_text()))
+
+
+def match_entries(entries: list[LibraryEntry], query: str) -> list[LibraryEntry]:
+    """Resolve a query against entries.
+
+    Priority: an exact id / short_id match (case-insensitive) wins outright;
+    otherwise a case-insensitive substring match on the title.
+    """
+    q = query.strip()
+    lowered = q.lower()
+    exact = [e for e in entries if e.id == q or e.short_id.lower() == lowered]
+    if exact:
+        return exact
+    return [e for e in entries if lowered in e.title.lower()]
+
+
+def resolve(query: str) -> list[LibraryEntry]:
+    """Scan the library and resolve a query to zero, one, or many entries."""
+    return match_entries(list_entries(), query)
+
+
+def delete_entry(entry: LibraryEntry) -> None:
+    shutil.rmtree(entry.dir())
