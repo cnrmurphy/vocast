@@ -11,6 +11,7 @@ from . import library
 from .audio import write_audio
 from .engines import get_engine
 from .pipeline import synthesize_article
+from .playback import play_file
 
 
 def cmd_add(args: argparse.Namespace) -> int:
@@ -84,6 +85,7 @@ def cmd_list(args: argparse.Namespace) -> int:
         return 0
     rows = [
         (
+            e.short_id,
             _truncate(e.title, LIST_TITLE_WIDTH),
             _format_duration(e.duration_seconds),
             e.voice,
@@ -91,12 +93,82 @@ def cmd_list(args: argparse.Namespace) -> int:
         )
         for e in entries
     ]
-    title_w = max(len("TITLE"), *(len(r[0]) for r in rows))
-    dur_w = max(len("DURATION"), *(len(r[1]) for r in rows))
-    voice_w = max(len("VOICE"), *(len(r[2]) for r in rows))
-    print(f"{'TITLE':<{title_w}}  {'DURATION':>{dur_w}}  {'VOICE':<{voice_w}}  ADDED")
-    for title, dur, voice, added in rows:
-        print(f"{title:<{title_w}}  {dur:>{dur_w}}  {voice:<{voice_w}}  {added}")
+    id_w = max(len("ID"), *(len(r[0]) for r in rows))
+    title_w = max(len("TITLE"), *(len(r[1]) for r in rows))
+    dur_w = max(len("DURATION"), *(len(r[2]) for r in rows))
+    voice_w = max(len("VOICE"), *(len(r[3]) for r in rows))
+    print(
+        f"{'ID':<{id_w}}  {'TITLE':<{title_w}}  "
+        f"{'DURATION':>{dur_w}}  {'VOICE':<{voice_w}}  ADDED"
+    )
+    for sid, title, dur, voice, added in rows:
+        print(
+            f"{sid:<{id_w}}  {title:<{title_w}}  "
+            f"{dur:>{dur_w}}  {voice:<{voice_w}}  {added}"
+        )
+    return 0
+
+
+def _resolve_one(query: str) -> library.LibraryEntry | None:
+    """Resolve a query to a single entry, prompting if there are several.
+
+    Returns the chosen entry, or None if there was no match or the user
+    cancelled the selection.
+    """
+    matches = library.resolve(query)
+    if not matches:
+        print(f"No matching article found for: {query}", file=sys.stderr)
+        return None
+    if len(matches) == 1:
+        return matches[0]
+
+    print("Multiple matches found:\n")
+    for i, entry in enumerate(matches, 1):
+        print(f"  {i}. {entry.short_id}  {entry.title}")
+    try:
+        raw = input(f"\nSelect [1-{len(matches)}] (blank to cancel): ").strip()
+    except EOFError:
+        raw = ""
+    if not raw:
+        print("Cancelled.")
+        return None
+    if not (raw.isdigit() and 1 <= int(raw) <= len(matches)):
+        print(f"Invalid selection: {raw}", file=sys.stderr)
+        return None
+    return matches[int(raw) - 1]
+
+
+def cmd_play(args: argparse.Namespace) -> int:
+    entry = _resolve_one(args.query)
+    if entry is None:
+        return 1
+    audio = entry.audio_path()
+    if not audio.exists():
+        print(f"error: audio file missing for {entry.short_id}", file=sys.stderr)
+        return 1
+    print(f"Playing: {entry.title}")
+    try:
+        play_file(audio)
+    except (OSError, subprocess.CalledProcessError) as exc:
+        print(f"error: could not play audio: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def cmd_delete(args: argparse.Namespace) -> int:
+    entry = _resolve_one(args.query)
+    if entry is None:
+        return 1
+    if not args.yes:
+        try:
+            answer = input(f'Delete "{entry.title}"? [y/N] ').strip().lower()
+        except EOFError:
+            answer = ""
+        if answer not in ("y", "yes"):
+            print("Cancelled.")
+            return 0
+    library.delete_entry(entry)
+    print(f'Deleted "{entry.title}"')
     return 0
 
 
@@ -260,6 +332,17 @@ def main(argv: list[str] | None = None) -> int:
 
     p_list = sub.add_parser("list", help="show library entries")
     p_list.set_defaults(func=cmd_list)
+
+    p_play = sub.add_parser("play", help="play an article from the library")
+    p_play.add_argument("query", help="article id, or part of its title")
+    p_play.set_defaults(func=cmd_play)
+
+    p_delete = sub.add_parser("delete", help="remove an article from the library")
+    p_delete.add_argument("query", help="article id, or part of its title")
+    p_delete.add_argument(
+        "-y", "--yes", action="store_true", help="skip the confirmation prompt"
+    )
+    p_delete.set_defaults(func=cmd_delete)
 
     p_serve = sub.add_parser("serve", help="run the HTTP server (RSS feed + audio)")
     p_serve.add_argument(
