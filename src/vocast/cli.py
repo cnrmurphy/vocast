@@ -186,11 +186,20 @@ def cmd_init(args: argparse.Namespace) -> int:
     print("Checking setup for serving vocast over Tailscale...")
     print()
 
+    is_windows = sys.platform.startswith("win")
+    is_macos = sys.platform == "darwin"
+    # The tailscale CLI needs sudo on Linux; on macOS/Windows the app runs it.
+    sudo = "" if (is_windows or is_macos) else "sudo "
+
     if not shutil.which("tailscale"):
         print("[ ] Tailscale not installed.")
         print()
         print("Install Tailscale, then re-run 'vocast init':")
-        if sys.platform == "darwin":
+        if is_windows:
+            print(
+                "  winget install Tailscale.Tailscale  (or https://tailscale.com/download)"
+            )
+        elif is_macos:
             print("  brew install tailscale  (or https://tailscale.com/download)")
         else:
             print("  curl -fsSL https://tailscale.com/install.sh | sh")
@@ -205,9 +214,12 @@ def cmd_init(args: argparse.Namespace) -> int:
     if status_proc.returncode != 0:
         print("[ ] Tailscale daemon not reachable.")
         print()
-        print("Start the daemon and sign in, then re-run 'vocast init':")
-        print("  sudo systemctl enable --now tailscaled")
-        print("  sudo tailscale up")
+        if is_windows or is_macos:
+            print("Open the Tailscale app and sign in, then re-run 'vocast init'.")
+        else:
+            print("Start the daemon and sign in, then re-run 'vocast init':")
+            print("  sudo systemctl enable --now tailscaled")
+            print("  sudo tailscale up")
         return 1
 
     status = json.loads(status_proc.stdout)
@@ -215,7 +227,7 @@ def cmd_init(args: argparse.Namespace) -> int:
         print("[ ] Not signed in to a tailnet.")
         print()
         print("Sign in (opens a browser), then re-run 'vocast init':")
-        print("  sudo tailscale up")
+        print(f"  {sudo}tailscale up")
         return 1
     print("[x] Signed in to tailnet.")
 
@@ -250,10 +262,8 @@ def cmd_init(args: argparse.Namespace) -> int:
     if not is_configured:
         print(f"[ ] HTTPS proxy not configured for port {args.port}.")
         print()
-        print(
-            "Configure it (one-time, may prompt for sudo), then re-run 'vocast init':"
-        )
-        print(f"  sudo tailscale serve --bg {args.port}")
+        print("Configure it (one-time), then re-run 'vocast init':")
+        print(f"  {sudo}tailscale serve --bg {args.port}")
         return 1
     print(f"[x] HTTPS proxy: https://{dns_name}/  ->  {expected_proxy}")
 
@@ -265,13 +275,11 @@ def cmd_init(args: argparse.Namespace) -> int:
     print()
     print("To use it:")
     print(f"  1. Start the server:        vocast serve --port {args.port}")
-    print("  2. Install Tailscale on iPhone, sign in to the same tailnet.")
-    print(f"  3. Open Safari, visit:      {feed_url}")
+    print("  2. Install Tailscale on your mobile device, sign in to the same tailnet.")
+    print(f"  3. Open browser of choice and visit:      {feed_url}")
     print(f"  4. Install a direct-download podcast app and add:  {feed_url}")
-    print("     Confirmed working: Downcast ($2.99). Any app that fetches feeds")
-    print("     directly on-device will work; AVOID Overcast and Pocket Casts —")
     print(
-        "     they fetch feeds via their own servers, which can't reach your tailnet."
+        "     IMPORTANT: If an app proxies HTTP requests through its own server, it will not be able to reach your tailnet. In other words, it won't discover your feed!"
     )
     return 0
 
