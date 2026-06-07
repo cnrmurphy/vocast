@@ -21,7 +21,7 @@ def cmd_add(args: argparse.Namespace) -> int:
         if not args.quiet:
             print(f"fetching {args.input}...")
         try:
-            fetched_title, text = fetch_article(args.input)
+            fetched_title, text, cover_url = fetch_article(args.input)
         except ValueError as e:
             print(f"error: {e}", file=sys.stderr)
             return 1
@@ -35,6 +35,7 @@ def cmd_add(args: argparse.Namespace) -> int:
         text = path.read_text(encoding="utf-8")
         title = args.title or path.stem
         source = args.source
+        cover_url = None
 
     engine = get_engine(args.engine)
     voice = args.voice or engine.default_voice
@@ -45,6 +46,7 @@ def cmd_add(args: argparse.Namespace) -> int:
         voice=voice,
         engine=args.engine,
         source=source,
+        cover_url=cover_url,
     )
     if not args.quiet:
         print(f"added {entry.id} ({entry.duration_seconds:.1f}s)")

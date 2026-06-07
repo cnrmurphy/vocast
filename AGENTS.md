@@ -15,3 +15,14 @@ Explain the **what** and the **why** in plain English — not a restatement of t
 
 Favor clarity over completeness: a short message that explains the reasoning
 beats a long one that lists every line touched.
+
+## Tests
+
+Test our own logic, not our dependencies. Assume third-party libraries and
+tools work — don't write tests asserting that, say, ffmpeg produces a valid
+file or a parser parses. Mock at the boundary and verify the behavior we
+control (what we pass to a dependency, how we handle its result, how we
+degrade when it fails).
+
+Prefer self-documenting names over comments. A well-named variable or test
+beats an inline comment explaining what the line does.
