@@ -37,10 +37,12 @@ def _fetch_html(url: str, timeout: float = 30.0) -> str:
         raise ValueError(f"timed out fetching {url}") from None
 
 
-def fetch_article(url: str) -> tuple[str | None, str]:
-    """Fetch a URL and return (title, body_text).
+def fetch_article(url: str) -> tuple[str | None, str, str | None]:
+    """Fetch a URL and return (title, body_text, cover_image_url).
 
-    Raises ValueError if the URL can't be fetched or has no extractable content.
+    cover_image_url is the article's og:image when the page advertises one,
+    else None. Raises ValueError if the URL can't be fetched or has no
+    extractable content.
     """
     html = _fetch_html(url)
 
@@ -58,8 +60,9 @@ def fetch_article(url: str) -> tuple[str | None, str]:
     data = json.loads(result)
     title = data.get("title")
     text = (data.get("text") or "").strip()
+    cover_image_url = data.get("image") or None
 
     if not text:
         raise ValueError(f"extracted empty content from {url}")
 
-    return title, text
+    return title, text, cover_image_url

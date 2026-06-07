@@ -38,7 +38,12 @@ def concat_with_silence(chunks: list[AudioChunk], gap_ms: int = 120) -> AudioChu
     return AudioChunk(np.concatenate(parts), sr)
 
 
-def write_audio(chunk: AudioChunk, path: Path, mp3_bitrate: str = "96k") -> None:
+def write_audio(
+    chunk: AudioChunk,
+    path: Path,
+    mp3_bitrate: str = "96k",
+    cover_path: Path | None = None,
+) -> None:
     path = Path(path)
     suffix = path.suffix.lower()
     if suffix == ".wav":
@@ -53,6 +58,16 @@ def write_audio(chunk: AudioChunk, path: Path, mp3_bitrate: str = "96k") -> None
             sample_width=2,
             channels=1,
         )
+        # Embed cover art (ID3 APIC) when given a usable image. If embedding
+        # fails for any reason, still produce the mp3 without art.
+        if cover_path is not None and Path(cover_path).exists():
+            try:
+                seg.export(
+                    path, format="mp3", bitrate=mp3_bitrate, cover=str(cover_path)
+                )
+                return
+            except Exception:
+                pass
         seg.export(path, format="mp3", bitrate=mp3_bitrate)
         return
     raise ValueError(f"unsupported output format: {suffix!r} (use .mp3 or .wav)")
