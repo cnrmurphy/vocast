@@ -4,9 +4,12 @@ Convert articles to audio using local TTS models.
 
 ![Vocast demo: add an article from a URL, list the library, and serve it as a podcast feed](assets/demo.gif)
 
-The clip above is sped up through the synthesis step. Once the feed is served, add its URL to a podcast app on your phone — here it is playing in Downcast:
+The clip above is sped up through the synthesis step. Once the feed is served, add its URL to a podcast app on your phone. Here it is playing in Downcast:
 
 https://github.com/user-attachments/assets/89de6fe0-136e-4c34-9430-ea075080cb3c
+
+> [!NOTE]
+> Use `https` with your Tailscale MagicDNS URL. Also pick a podcast app that fetches feeds directly rather than proxying requests through its own servers, since those can't reach your tailnet. The app needs to communicate directly with your vocast server. Downcast has worked well for me, although there is a small cost of $2.
 
 ## Why
 
