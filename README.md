@@ -98,7 +98,7 @@ vocast init
 A guided checklist that walks you through installing Tailscale, signing into your tailnet, and proxying `vocast serve` over HTTPS via `tailscale serve`. Re-run after each step until it prints your feed URL, then add that URL to a podcast app on your phone.
 
 > [!NOTE]
-> Make sure the URL you add uses `https`. The app must communicate with your vocast server directly. Apps that proxy feeds through their own servers (Overcast, Pocket Casts, etc.) can't reach your tailnet. Downcast has worked well for me, although there is a small cost of $2.
+> Make sure the URL you add uses `https`. The app must communicate with your vocast server directly. Apps that proxy feeds through their own servers (Overcast, Pocket Casts, etc.) can't reach your tailnet. On iPhone, the built-in Apple Podcasts app works and is free. Downcast also works well, although it costs about $2.
 
 ### Synthesize directly to a file (skip the library)
 
