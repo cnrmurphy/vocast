@@ -12,3 +12,11 @@ build/
 .DS_Store
 .pytest_cache/
 .ruff_cache/
+
+# VHS demo intermediates (keep demo.gif, demo.tape, make_gif.sh)
+assets/demo_raw.webm
+assets/demo_speed.webm
+assets/palette.png
+
+# Phone clip — uploaded to GitHub as an attachment, not committed
+assets/downcast-demo.mp4

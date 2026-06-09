@@ -2,6 +2,14 @@
 
 Convert articles to audio using local TTS models.
 
+![Vocast demo: add an article from a URL, list the library, and serve it as a podcast feed](assets/demo.gif)
+
+> The clip above is sped up through the synthesis step. Once the feed is served, add its URL to a podcast app on your phone — here it is playing in Downcast:
+>
+> <!-- TODO: drag-and-drop your iPhone screen recording into a GitHub issue/PR comment,
+>      then paste the resulting asset URL here, e.g.:
+>      https://user-images.githubusercontent.com/.../downcast-demo.mp4 -->
+
 ## Why
 
 I wanted a way to convert articles into audio that I could stream to my mobile device while on the go. This seemed straightforward enough to build myself
