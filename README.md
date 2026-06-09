@@ -8,9 +8,6 @@ The clip above is sped up through the synthesis step. Once the feed is served, a
 
 https://github.com/user-attachments/assets/89de6fe0-136e-4c34-9430-ea075080cb3c
 
-> [!NOTE]
-> Use `https` with your Tailscale MagicDNS URL. Also pick a podcast app that fetches feeds directly rather than proxying requests through its own servers, since those can't reach your tailnet. The app needs to communicate directly with your vocast server. Downcast has worked well for me, although there is a small cost of $2.
-
 ## Why
 
 I wanted a way to convert articles into audio that I could stream to my mobile device while on the go. This seemed straightforward enough to build myself
@@ -20,7 +17,7 @@ and I didn't want to pay for an app.
 
 Vocast uses Kokoro for TTS. It can fetch articles from a given URL or local text file. Audio files are saved to `~/.vocast/library`. It provides an HTTP server
 that exposes an RSS feed allowing for podcast apps to discover the converted audio files. You can use Tailscale to allow connections between the server and client devices
-like your mobile phone. You will need to use a podcast app that does not proxy requests through their own servers as that will prevent the app from connecting to your Vocast server.
+like your mobile phone.
 
 ## Requirements
 
@@ -98,7 +95,10 @@ Exposes `GET /feed.xml` (podcast RSS) and `GET /audio/<id>.mp3` (audio enclosure
 vocast init
 ```
 
-A guided checklist that walks you through installing Tailscale, signing into your tailnet, and proxying `vocast serve` over HTTPS via `tailscale serve`. Re-run after each step until it prints your feed URL, then add that URL to a direct-download podcast app (Downcast is confirmed working).
+A guided checklist that walks you through installing Tailscale, signing into your tailnet, and proxying `vocast serve` over HTTPS via `tailscale serve`. Re-run after each step until it prints your feed URL, then add that URL to a podcast app on your phone.
+
+> [!NOTE]
+> Make sure the URL you add uses `https`. The app must communicate with your vocast server directly. Apps that proxy feeds through their own servers (Overcast, Pocket Casts, etc.) can't reach your tailnet. Downcast has worked well for me, although there is a small cost of $2.
 
 ### Synthesize directly to a file (skip the library)
 
