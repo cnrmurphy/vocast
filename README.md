@@ -2,7 +2,7 @@
 
 Convert articles to audio using local TTS models.
 
-![Vocast demo: add an article from a URL, list the library, and serve it as a podcast feed](assets/demo.gif)
+![Vocast demo: add an article from a URL, list the library, and serve it as a podcast feed](https://raw.githubusercontent.com/cnrmurphy/vocast/main/assets/demo.gif)
 
 The clip above is sped up through the synthesis step. Once the feed is served, add its URL to a podcast app on your phone. Here it is playing in Downcast:
 
